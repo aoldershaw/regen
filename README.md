@@ -4,6 +4,12 @@ A Regular Expression GENerator. It aims to provide a fluent syntax for
 constructing composable Go regular expressions in a way that that is easy to read 
 and write at the cost of being much more verbose.
 
+## Installation
+
+```
+$ go get github.com/aoldershaw/regen 
+```
+
 ## Usage
 
 ```go
@@ -19,7 +25,9 @@ func main() {
         regen.UnicodeCharClass("Katakana"),
         regen.UnicodeCharClass("Han"),
     ).Repeat().Min(1)
+
     englishWord := regen.WordCharacter.Repeat().Min(1)
+
     re := regexp.MustCompile(regen.Sequence(
         regen.LineStart,
         regen.OneOf(japaneseWord, englishWord).Group().CaptureAs("greeting"),
@@ -29,7 +37,7 @@ func main() {
         ).Optional(),
         regen.LineEnd,
     ).Regexp())
-    // Results in: ^(?P<greeting>[\p{Hiragana}\p{Katakana}\p{Han}]+|[a-zA-Z]+)(\s+(world|世界))?$
+    // Results in: ^(?P<greeting>[\p{Hiragana}\p{Katakana}\p{Han}]+|w+)(\s+(world|世界))?$
 
     re.MatchString("こんにちは")   // == true (`greeting` capture group == "こんにちは")
     re.MatchString("hello 世界")  // == true (`greeting` capture group == "hello")
@@ -63,10 +71,4 @@ re := regexp.MustCompile(regen.Sequence(
 ))
 // Results in: [A-Za-z0-9+/]+={0,2}
 ...
-```
-
-## Installation
-
-```
-$ go get github.com/aoldershaw/regen 
 ```
