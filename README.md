@@ -6,7 +6,7 @@ and write at the cost of being much more verbose.
 
 ## Usage
 
-```
+```go
 package main
 
 import (
@@ -41,17 +41,18 @@ but still want the other benefits of composition, use the `regen.Raw`
 function to input raw regular expressions. For instance, to match base64 encoded
 strings:
 
-```
+```go
 re := regexp.MustCompile(regen.Sequence(
     regen.Raw(`[A-Za-z0-9+/]`).Repeat().Min(1),
     regen.String("=").Repeat().Max(2),
 ))
 // Results in: [A-Za-z0-9+/]+={0,2}
+...
 ```
 
 Note that this *could* be expressed without using `regen.Raw` as follows:
 
-```
+```go
 re := regexp.MustCompile(regen.Sequence(
     regen.CharRange('A', 'Z').Append(
         regen.CharRange('a', 'z'),
@@ -61,6 +62,7 @@ re := regexp.MustCompile(regen.Sequence(
     regen.String("=").Repeat().Max(2),
 ))
 // Results in: [A-Za-z0-9+/]+={0,2}
+...
 ```
 
 ## Installation
