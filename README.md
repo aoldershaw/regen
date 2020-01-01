@@ -89,6 +89,38 @@ in the resulting regexp. For instance, the result `regen.OneOf` will be grouped.
 on a particular ordering of capture groups, you should explicitly call `.Group().NoCapture()` on
 sub expressions that should not be captured.
 
+### Character Classes
+
+There are several different types of character classes that are available:
+
+* **`regen.CharSet`** - generate a whitelist or a blacklist of allowed characters
+  * `regen.CharSet('a', 'e', 'i', 'o', 'u')` generates `[aeiou]`
+  * `regen.CharSet('a', 'e', 'i', 'o', 'u').Negate()` generates `[^aeiou]`
+* **`regen.CharRange`** - generate a range of characters to include/exclude
+  * `regen.CharRange('a', 'z')` generates `[a-z]`
+  * `regen.CharRange('a', 'z').Negate()` generates `[^a-z]`
+* **`regen.ASCIICharClass`** - refer to a named ASCII character class to include/exclude.
+  Refer to [regexp/syntax](https://golang.org/pkg/regexp/syntax/) for a list of available
+  ASCII character classes.
+  * `regen.ASCIICharClass("alpha")` generates `[[:alpha:]]`
+  * `regen.ASCIICharClass("alpha").Negate()` generates `[[:^alpha:]]`
+* **`regen.UnicodeCharClass`** - refer to a named Unicode character class to include/exclude.
+  * `regen.UnicodeCharClass("Greek")` generates `\p{Greek}`
+  * `regen.UnicodeCharClass("Greek").Negate()` generates `\P{Greek}`
+* **`regen.Whitespace`, `regen.Digit`, `regen.WordCharacter`** - Perl character classes
+  * `regen.Whitespace` generates `\s`, `regen.Whitespace.Negate()` generates `\S`
+  * `regen.Digit` generates `\d`, `regen.Digit.Negate()` generates `\D`
+  * `regen.WordCharacter` generates `\w`, `regen.WordCharacter.Negate()` generates `\W`
+
+Multiple character classes can be joined using `regen.Union`:
+
+```go
+vowelsAndDigits := regen.Union(
+    regen.CharSet('a', 'e', 'i', 'o', 'u'),
+    regen.Digit,
+)
+// Results in: [aeiou\d]
+```
 
 ### Raw Regular Expressions
 
@@ -111,9 +143,8 @@ Note that this *could* be expressed without using `regen.Raw` as follows:
 ```go
 re := regexp.MustCompile(regen.Sequence(
     regen.Union(
-        regen.CharRange('A', 'Z'),
-        regen.CharRange('a', 'z'),
-        regen.CharRange('0', '9'),
+        regen.WordCharacter,
+        regen.Digit,
         regen.CharSet('+', '/'),
     ).Repeat().Min(1),
     regen.String("=").Repeat().Max(2),

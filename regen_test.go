@@ -93,6 +93,16 @@ func TestRegen(t *testing.T) {
 			expected:    `\pZ`,
 		},
 		{
+			description: "Perl char classes work properly",
+			re:          regen.Whitespace,
+			expected:    `\s`,
+		},
+		{
+			description: "Perl char classes work properly negated",
+			re:          regen.Whitespace.Negate(),
+			expected:    `\S`,
+		},
+		{
 			description: "CharClasses can be joined using Union",
 			re: regen.Union(
 				regen.CharSet('h', 'こ', 'é'),
@@ -115,32 +125,35 @@ func TestRegen(t *testing.T) {
 			expected: `([hこé[:alpha:]\p{Greek}]|[^va-c])`,
 		},
 		{
-			description: "If there is only a negated branch, Union will put all ASCII/Unicode classes into it",
+			description: "If there is only a negated branch, Union will put all ASCII/Unicode/Perl classes into it",
 			re: regen.Union(
 				regen.CharSet('h', 'こ', 'é').Negate(),
 				regen.ASCIICharClass("alpha").Negate(),
 				regen.UnicodeCharClass("Greek"),
+				regen.Whitespace.Negate(),
 			),
-			expected: `[^hこé[:alpha:]\P{Greek}]`,
+			expected: `[^hこé[:alpha:]\P{Greek}\s]`,
 		},
 		{
-			description: "If there is only a non-negated branch, Union will put all ASCII/Unicode classes into it",
+			description: "If there is only a non-negated branch, Union will put all ASCII/Unicode/Perl classes into it",
 			re: regen.Union(
 				regen.CharSet('h', 'こ', 'é'),
 				regen.ASCIICharClass("alpha").Negate(),
 				regen.UnicodeCharClass("Greek"),
+				regen.Whitespace.Negate(),
 			),
-			expected: `[hこé[:^alpha:]\p{Greek}]`,
+			expected: `[hこé[:^alpha:]\p{Greek}\S]`,
 		},
 		{
-			description: "If there are non-negated and negated branches, Union will distribute the ASCII/Unicode classes",
+			description: "If there are non-negated and negated branches, Union will distribute the ASCII/Unicode/Perl classes",
 			re: regen.Union(
 				regen.CharSet('h', 'こ', 'é'),
 				regen.ASCIICharClass("alpha").Negate(),
 				regen.UnicodeCharClass("Greek"),
+				regen.Whitespace.Negate(),
 				regen.CharRange('a', 'c').Negate(),
 			),
-			expected: `([hこé\p{Greek}]|[^a-c[:alpha:]])`,
+			expected: `([hこé\p{Greek}]|[^a-c[:alpha:]\s])`,
 		},
 		{
 			description: "Grouping a Regexp",

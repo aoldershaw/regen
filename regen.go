@@ -1,6 +1,7 @@
 package regen
 
 import (
+	"bytes"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,7 +23,8 @@ type Regexp interface {
 
 // CharClass is a Regexp that represents a class of possible characters.
 // This can be a set of allowed characters (e.g. [abc]), a range of allowed characters (e.g. [a-z]),
-// a unicode character class (e.g. \p{Greek}), or an ASCII character class (e.g. [[:alpha:]])
+// a unicode character class (e.g. \p{Greek}), an ASCII character class (e.g. [[:alpha:]]), or a Perl
+// character class.
 type CharClass interface {
 	Regexp
 	// Negate returns a new CharClass that matches a character if and only if that character is
@@ -634,4 +636,48 @@ func (u unicodeCharClassRegexp) Negate() CharClass {
 
 func (u unicodeCharClassRegexp) IsNegated() bool {
 	return u.negated
+}
+
+type perlCharClassRegexp struct {
+	letter  byte
+	negated bool
+}
+
+func perlCharClass(letter byte) CharClass {
+	return perlCharClassRegexp{
+		letter: letter,
+	}
+}
+
+func (p perlCharClassRegexp) Regexp() string {
+	b := []byte{'\\', p.letter}
+	if p.negated {
+		b = bytes.ToUpper(b)
+	}
+	return string(b)
+}
+
+func (p perlCharClassRegexp) Group() GroupedRegexp {
+	return groupedRegexp{re: p}
+}
+
+func (p perlCharClassRegexp) Repeat() RepeatedRegexp {
+	return repeatedRegexp{re: p}
+}
+
+func (p perlCharClassRegexp) Optional() Regexp {
+	return repeatedRegexp{re: p}.Min(0).Max(1)
+}
+
+func (p perlCharClassRegexp) charSetRegexp() string {
+	return p.Regexp()
+}
+
+func (p perlCharClassRegexp) Negate() CharClass {
+	p.negated = !p.negated
+	return p
+}
+
+func (p perlCharClassRegexp) IsNegated() bool {
+	return p.negated
 }
