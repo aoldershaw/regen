@@ -15,7 +15,7 @@ type Regexp interface {
 	// Repeat returns a new Regexp that is repeated, by default 0 to many times (equivalent to adding *).
 	// This may wrap the regular expression in parentheses
 	Repeat() RepeatedRegexp
-	// Optional returns a new Regexp that can  appear 0 or 1 times (equivalent to adding ?).
+	// Optional returns a new Regexp that can appear 0 or 1 times (equivalent to adding ?).
 	// This may wrap the regular expression in parentheses
 	Optional() Regexp
 }
