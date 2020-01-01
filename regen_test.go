@@ -257,7 +257,7 @@ func Example() {
 		regen.UnicodeCharClass("Katakana"),
 		regen.UnicodeCharClass("Han"),
 	).Repeat().Min(1)
-	englishWord := regen.CharRange('a', 'z').Append(regen.CharRange('A', 'Z')).Repeat().Min(1)
+	englishWord := regen.WordCharacter.Repeat().Min(1)
 	re := regen.Sequence(
 		regen.LineStart,
 		regen.OneOf(japaneseWord, englishWord).Group().CaptureAs("greeting"),
@@ -268,5 +268,5 @@ func Example() {
 		regen.LineEnd,
 	)
 	fmt.Println(re.Regexp())
-	// Output: ^(?P<greeting>[\p{Hiragana}\p{Katakana}\p{Han}]+|[a-zA-Z]+)(\s+(world|世界))?$
+	// Output: ^(?P<greeting>[\p{Hiragana}\p{Katakana}\p{Han}]+|\w+)(\s+(world|世界))?$
 }
