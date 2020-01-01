@@ -44,37 +44,6 @@ func main() {
 }
 ```
 
-### Raw Regular Expressions
-
-If it is too awkward to construct your regular expression using this syntax,
-but still want the other benefits of composition, use the `regen.Raw`
-function to input raw regular expressions. For instance, to match base64 encoded
-strings:
-
-```go
-re := regexp.MustCompile(regen.Sequence(
-    regen.Raw(`[A-Za-z0-9+/]`).Repeat().Min(1),
-    regen.String("=").Repeat().Max(2),
-).Regexp())
-// Results in: [A-Za-z0-9+/]+={0,2}
-...
-```
-
-Note that this *could* be expressed without using `regen.Raw` as follows:
-
-```go
-re := regexp.MustCompile(regen.Sequence(
-    regen.CharRange('A', 'Z').Append(
-        regen.CharRange('a', 'z'),
-        regen.CharRange('0', '9'),
-        regen.CharSet('+', '/'),
-    ).Repeat().Min(1),
-    regen.String("=").Repeat().Max(2),
-).Regexp())
-// Results in: [A-Za-z0-9+/]+={0,2}
-...
-```
-
 ### Grouping/Capturing
 
 You can create a capturing (or non-capturing) group by calling `.Group` on any regular expression.
@@ -116,3 +85,35 @@ greeting := regen.Sequence(
 in the resulting regexp. For instance, the result `regen.OneOf` will be grouped. If you need to rely
 on a particular ordering of capture groups, you should explicitly call `.Group().NoCapture()` on
 sub expressions that should not be captured.
+
+
+### Raw Regular Expressions
+
+If it is too awkward to construct your regular expression using this syntax,
+but still want the other benefits of composition, use the `regen.Raw`
+function to input raw regular expressions. For instance, to match base64 encoded
+strings:
+
+```go
+re := regexp.MustCompile(regen.Sequence(
+    regen.Raw(`[A-Za-z0-9+/]`).Repeat().Min(1),
+    regen.String("=").Repeat().Max(2),
+).Regexp())
+// Results in: [A-Za-z0-9+/]+={0,2}
+...
+```
+
+Note that this *could* be expressed without using `regen.Raw` as follows:
+
+```go
+re := regexp.MustCompile(regen.Sequence(
+    regen.CharRange('A', 'Z').Append(
+        regen.CharRange('a', 'z'),
+        regen.CharRange('0', '9'),
+        regen.CharSet('+', '/'),
+    ).Repeat().Min(1),
+    regen.String("=").Repeat().Max(2),
+).Regexp())
+// Results in: [A-Za-z0-9+/]+={0,2}
+...
+```

@@ -6,37 +6,71 @@ import (
 	"strings"
 )
 
-// TODO: godocs...
-
+// Regexp is a representation of an uncompiled regular expression
 type Regexp interface {
+	// Regexp returns the regular expression as a string, which is commonly passed into regexp.MustCompile
 	Regexp() string
+	// Group returns a new Regexp that is in parentheses (if it is not already), making it a capturing group
 	Group() GroupedRegexp
+	// Repeat returns a new Regexp that is repeated, by default 0 to many times (equivalent to adding *).
+	// This may wrap the regular expression in parentheses
 	Repeat() RepeatedRegexp
+	// Optional returns a new Regexp that can  appear 0 or 1 times (equivalent to adding ?).
+	// This may wrap the regular expression in parentheses
 	Optional() Regexp
 }
 
+// CharClass is a Regexp that represents a class of possible characters.
+// This can be a set of allowed characters (e.g. [abc]), a range of allowed characters (e.g. [a-z]),
+// a unicode character class (e.g. \p{Greek}), or an ASCII character class (e.g. [[:alpha:]])
 type CharClass interface {
 	Regexp
+	// Negate returns a new CharClass that matches a character if and only if that character is
+	// not matched in the original CharClass
 	Negate() CharClass
+	// Append returns a new CharClass that represents the union of the original CharClass, plus all
+	// CharClasses in classes
 	Append(classes ...CharClass) CharClass
 	charSetRegexp() string
 }
 
+// GroupedRegexp is a Regexp that is wrapped in parentheses. It may or may not be a capturing group,
+// and may have one or more flags enabled and/or disabled
 type GroupedRegexp interface {
 	Regexp
+	// Capture returns a new GroupedRegexp that is a capturing group.
+	// Since all GroupedRegexps are captured by default, this is only useful if you have an existing
+	// non-capturing group Regexp that you wish to convert into a capturing group.
 	Capture() GroupedRegexp
+	// CaptureAs returns a new GroupedRegexp that is a named capturing group.
+	// This name will appear in the SubexpNames function of a compiled *regexp.Regexp (from the standard library)
 	CaptureAs(name string) GroupedRegexp
+	// NoCapture returns a new GroupedRegexp that is non-capturing group
 	NoCapture() GroupedRegexp
+	// SetFlags returns a new GroupedRegexp that enables one or more Flags in the scope of the current group.
+	// Multiple Flags can be passed in by joining them with the bitwise or |
 	SetFlags(flags Flag) GroupedRegexp
+	// UnsetFlags returns a new GroupedRegexp that explicitly disables one or more Flags in the scope of the current group.
+	// Note that this is not always equivalent to not setting a flag. For instance, if a GroupedRegexp A is nested inside
+	// another GroupedRegexp B, where B has a flag set, that flag will also apply to A (unless explicitly unset).
+	// Multiple Flags can be passed in by joining them with the bitwise or |
 	UnsetFlags(flags Flag) GroupedRegexp
 }
 
+// RepeatedRegexp is a Regexp that can be repeated some number of times
 type RepeatedRegexp interface {
 	Regexp
-	Min(uint) RepeatedRegexp
-	Max(uint) RepeatedRegexp
-	Exactly(uint) RepeatedRegexp
+	// Min returns a new RepeatedRegexp that must appear at least min times
+	Min(min uint) RepeatedRegexp
+	// Max returns a new RepeatedRegexp that must appear at least max times
+	Max(max uint) RepeatedRegexp
+	// Exactly returns a new RepeatedRegexp that must appear exactly num times
+	Exactly(num uint) RepeatedRegexp
+	// Greedy returns a new RepeatedRegexp that prefers more matches.
+	// Since all RepeatedRegexps are greedy by default, this is only useful if you have an existing
+	// ungreedy RepeatedRegexp that you wish to convert into a greedy one.
 	Greedy() RepeatedRegexp
+	// Ungreedy returns a new RepeatedRegexp that prefers fewer matches.
 	Ungreedy() RepeatedRegexp
 }
 
@@ -233,6 +267,7 @@ type multiRegexp struct {
 	separator string
 }
 
+// OneOf returns a new Regexp that matches any of choices, preferring the choices specified earlier
 func OneOf(choices ...Regexp) Regexp {
 	return groupedRegexp{
 		re: multiRegexp{
@@ -242,6 +277,7 @@ func OneOf(choices ...Regexp) Regexp {
 	}
 }
 
+// Sequence returns a new Regexp that expects each sub-Regexp to appear in order
 func Sequence(subseqs ...Regexp) Regexp {
 	return multiRegexp{
 		res:       subseqs,
@@ -276,12 +312,16 @@ type literalRegexp struct {
 	re string
 }
 
+// Raw returns a Regexp that represents the literal regular expression string passed in.
+// No validation is done on this string.
 func Raw(s string) Regexp {
 	return literalRegexp{
 		re: s,
 	}
 }
 
+// String returns a Regexp that matches the literal string.
+// Regular expression metacharacters are escaped.
 func String(s string) Regexp {
 	return Raw(regexp.QuoteMeta(s))
 }
@@ -308,6 +348,7 @@ type charSetRegexp struct {
 	negated     bool
 }
 
+// CharSet returns a CharClass that matches any of the provided chars
 func CharSet(chars ...rune) CharClass {
 	return charSetRegexp{
 		chars: chars,
@@ -370,6 +411,7 @@ type charRangeRegexp struct {
 	negated bool
 }
 
+// CharRange returns a CharClass that matches any character between start and end, inclusive
 func CharRange(start, end rune) CharClass {
 	return charRangeRegexp{
 		start: start,
@@ -421,6 +463,8 @@ type asciiCharClassRegexp struct {
 	negated bool
 }
 
+// ASCIICharClass returns a CharClass that represents the set of ASCII characters specified by a name.
+// For a list of available names, see https://golang.org/pkg/regexp/syntax/
 func ASCIICharClass(name string) CharClass {
 	return asciiCharClassRegexp{
 		name: name,
@@ -468,6 +512,7 @@ type unicodeCharClassRegexp struct {
 	negated bool
 }
 
+// UnicodeCharClass returns a CharClass that represents the set of Unicode characters specified by a name.
 func UnicodeCharClass(name string) CharClass {
 	return unicodeCharClassRegexp{
 		name: name,

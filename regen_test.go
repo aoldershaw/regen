@@ -93,7 +93,7 @@ func TestRegen(t *testing.T) {
 			expected:    `\pZ`,
 		},
 		{
-			description: "CharSet can be appended to with other CharClasses",
+			description: "CharSet can be appended to other CharClasses",
 			re: regen.CharSet('h', 'こ', 'é').Append(
 				regen.ASCIICharClass("alpha").Negate(),
 				regen.UnicodeCharClass("Greek"),
@@ -206,18 +206,6 @@ func TestRegen(t *testing.T) {
 			re:          regen.CharSet('h', 'e', 'y').Optional(),
 			expected:    `[hey]?`,
 		},
-		//{
-		//	description: "Complex case",
-		//	// (^\^?([^$\\]|\\[^z])*$)|(^\^?([^$\\]|\\[^z])*\.[*+](\$|\\z)$)
-		//	re: regen.OneOf(
-		//			regen.Sequence(
-		//				regen.LineStart,
-		//
-		//			)
-		//		),
-		//	),
-		//	expected: `[hこév[:^alpha:]\p{Greek}]`,
-		//},
 	}
 	for _, tt := range tests {
 		actual := tt.re.Regexp()
@@ -257,7 +245,9 @@ func Example() {
 		regen.UnicodeCharClass("Katakana"),
 		regen.UnicodeCharClass("Han"),
 	).Repeat().Min(1)
+
 	englishWord := regen.WordCharacter.Repeat().Min(1)
+
 	re := regen.Sequence(
 		regen.LineStart,
 		regen.OneOf(japaneseWord, englishWord).Group().CaptureAs("greeting"),
