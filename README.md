@@ -135,7 +135,6 @@ re := regexp.MustCompile(regen.Sequence(
     regen.String("=").Repeat().Max(2),
 ).Regexp())
 // Results in: [A-Za-z0-9+/]+={0,2}
-...
 ```
 
 Note that this *could* be expressed without using `regen.Raw` as follows:
@@ -150,5 +149,4 @@ re := regexp.MustCompile(regen.Sequence(
     regen.String("=").Repeat().Max(2),
 ).Regexp())
 // Results in: [A-Za-z0-9+/]+={0,2}
-...
 ```
