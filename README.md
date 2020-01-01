@@ -1,6 +1,8 @@
 # regen
 
-A Regular Expression GENerator. It aims to provide a fluent syntax for constructing composable
+[![Documentation](https://godoc.org/github.com/aoldershaw/regen?status.svg)](http://godoc.org/github.com/aoldershaw/regen)
+
+Regular Expression GENerator. It aims to provide a fluent syntax for constructing composable
 Go regular expressions in a way that that is easy to read and write at the cost of being (much)
 more verbose.
 
