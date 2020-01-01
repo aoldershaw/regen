@@ -93,13 +93,54 @@ func TestRegen(t *testing.T) {
 			expected:    `\pZ`,
 		},
 		{
-			description: "CharSet can be appended to other CharClasses",
-			re: regen.CharSet('h', 'こ', 'é').Append(
-				regen.ASCIICharClass("alpha").Negate(),
+			description: "CharClasses can be joined using Union",
+			re: regen.Union(
+				regen.CharSet('h', 'こ', 'é'),
+				regen.ASCIICharClass("alpha"),
 				regen.UnicodeCharClass("Greek"),
 				regen.CharSet('v'),
+				regen.CharRange('a', 'c'),
 			),
-			expected: `[hこé[:^alpha:]\p{Greek}v]`,
+			expected: `[hこéva-c[:alpha:]\p{Greek}]`,
+		},
+		{
+			description: "Union will separate negated CharSets/CharRanges from non-negated ones",
+			re: regen.Union(
+				regen.CharSet('h', 'こ', 'é'),
+				regen.ASCIICharClass("alpha"),
+				regen.UnicodeCharClass("Greek"),
+				regen.CharSet('v').Negate(),
+				regen.CharRange('a', 'c').Negate(),
+			),
+			expected: `([hこé[:alpha:]\p{Greek}]|[^va-c])`,
+		},
+		{
+			description: "If there is only a negated branch, Union will put all ASCII/Unicode classes into it",
+			re: regen.Union(
+				regen.CharSet('h', 'こ', 'é').Negate(),
+				regen.ASCIICharClass("alpha").Negate(),
+				regen.UnicodeCharClass("Greek"),
+			),
+			expected: `[^hこé[:alpha:]\P{Greek}]`,
+		},
+		{
+			description: "If there is only a non-negated branch, Union will put all ASCII/Unicode classes into it",
+			re: regen.Union(
+				regen.CharSet('h', 'こ', 'é'),
+				regen.ASCIICharClass("alpha").Negate(),
+				regen.UnicodeCharClass("Greek"),
+			),
+			expected: `[hこé[:^alpha:]\p{Greek}]`,
+		},
+		{
+			description: "If there are non-negated and negated branches, Union will distribute the ASCII/Unicode classes",
+			re: regen.Union(
+				regen.CharSet('h', 'こ', 'é'),
+				regen.ASCIICharClass("alpha").Negate(),
+				regen.UnicodeCharClass("Greek"),
+				regen.CharRange('a', 'c').Negate(),
+			),
+			expected: `([hこé\p{Greek}]|[^a-c[:alpha:]])`,
 		},
 		{
 			description: "Grouping a Regexp",
@@ -241,7 +282,8 @@ func TestFlags(t *testing.T) {
 }
 
 func Example() {
-	japaneseWord := regen.UnicodeCharClass("Hiragana").Append(
+	japaneseWord := regen.Union(
+		regen.UnicodeCharClass("Hiragana"),
 		regen.UnicodeCharClass("Katakana"),
 		regen.UnicodeCharClass("Han"),
 	).Repeat().Min(1)

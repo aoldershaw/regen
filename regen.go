@@ -28,9 +28,8 @@ type CharClass interface {
 	// Negate returns a new CharClass that matches a character if and only if that character is
 	// not matched in the original CharClass
 	Negate() CharClass
-	// Append returns a new CharClass that represents the union of the original CharClass, plus all
-	// CharClasses in classes
-	Append(classes ...CharClass) CharClass
+	// IsNegated returns true if Negate has been called an odd number of times, else false
+	IsNegated() bool
 	charSetRegexp() string
 }
 
@@ -342,10 +341,104 @@ func (l literalRegexp) Optional() Regexp {
 	return repeatedRegexp{re: l}.Min(0).Max(1)
 }
 
-type charSetRegexp struct {
-	chars       []rune
+type unionCharClassRegexp struct {
 	charClasses []CharClass
 	negated     bool
+}
+
+// Union returns a Regexp that includes the union of the provided classes.
+// If two of the CharClasses cannot be merged into a single entity (for instance, a regular
+// CharSet with a negated CharSet), they will be joined using a OneOf.
+func Union(classes ...CharClass) Regexp {
+	var positive []CharClass
+	var negative []CharClass
+	var any []CharClass
+	for _, class := range classes {
+		// The only problematic CharClasses are CharSet and CharRange when there is a mismatch
+		// between negations. Negated ASCIICharClasses and UnicodeCharClasses can be safely put
+		// in either category
+		switch class.(type) {
+		case charSetRegexp, charRangeRegexp:
+			if class.IsNegated() {
+				negative = append(negative, class.Negate())
+			} else {
+				positive = append(positive, class)
+			}
+		default:
+			any = append(any, class)
+		}
+	}
+	hasPositive := len(positive) > 0
+	hasNegative := len(negative) > 0
+	if !hasPositive && !hasNegative {
+		return unionCharClassRegexp{charClasses: any}
+	}
+	if (hasPositive && !hasNegative) || (hasNegative && !hasPositive) {
+		activeBranch := positive
+		if hasNegative {
+			activeBranch = negative
+			for i, class := range any {
+				any[i] = class.Negate()
+			}
+		}
+		activeBranch = append(activeBranch, any...)
+		return unionCharClassRegexp{
+			charClasses: activeBranch,
+			negated:     hasNegative,
+		}
+	}
+	for _, class := range any {
+		if class.IsNegated() {
+			negative = append(negative, class.Negate())
+		} else {
+			positive = append(positive, class)
+		}
+	}
+	return OneOf(
+		unionCharClassRegexp{charClasses: positive},
+		unionCharClassRegexp{charClasses: negative, negated: true},
+	)
+}
+
+func (u unionCharClassRegexp) Regexp() string {
+	return "[" + u.charSetRegexp() + "]"
+}
+
+func (u unionCharClassRegexp) Group() GroupedRegexp {
+	return groupedRegexp{re: u}
+}
+
+func (u unionCharClassRegexp) Repeat() RepeatedRegexp {
+	return repeatedRegexp{re: u}
+}
+
+func (u unionCharClassRegexp) Optional() Regexp {
+	return repeatedRegexp{re: u}.Min(0).Max(1)
+}
+
+func (u unionCharClassRegexp) charSetRegexp() string {
+	var sb strings.Builder
+	if u.negated {
+		sb.WriteString("^")
+	}
+	for _, c := range u.charClasses {
+		sb.WriteString(c.charSetRegexp())
+	}
+	return sb.String()
+}
+
+func (u unionCharClassRegexp) Negate() CharClass {
+	u.negated = !u.negated
+	return u
+}
+
+func (u unionCharClassRegexp) IsNegated() bool {
+	return u.negated
+}
+
+type charSetRegexp struct {
+	chars   []rune
+	negated bool
 }
 
 // CharSet returns a CharClass that matches any of the provided chars
@@ -386,23 +479,16 @@ func (c charSetRegexp) charSetRegexp() string {
 	for _, c := range c.chars {
 		writeCharSetRune(&sb, c)
 	}
-	for _, c := range c.charClasses {
-		sb.WriteString(c.charSetRegexp())
-	}
 	return sb.String()
-}
-
-func (c charSetRegexp) Append(classes ...CharClass) CharClass {
-	return charSetRegexp{
-		chars:       c.chars,
-		charClasses: append(c.charClasses, classes...),
-		negated:     c.negated,
-	}
 }
 
 func (c charSetRegexp) Negate() CharClass {
 	c.negated = !c.negated
 	return c
+}
+
+func (c charSetRegexp) IsNegated() bool {
+	return c.negated
 }
 
 type charRangeRegexp struct {
@@ -446,16 +532,13 @@ func (c charRangeRegexp) charSetRegexp() string {
 	return sb.String()
 }
 
-func (c charRangeRegexp) Append(classes ...CharClass) CharClass {
-	return charSetRegexp{
-		charClasses: append([]CharClass{c}, classes...),
-		negated:     c.negated,
-	}
-}
-
 func (c charRangeRegexp) Negate() CharClass {
 	c.negated = !c.negated
 	return c
+}
+
+func (c charRangeRegexp) IsNegated() bool {
+	return c.negated
 }
 
 type asciiCharClassRegexp struct {
@@ -495,16 +578,13 @@ func (a asciiCharClassRegexp) charSetRegexp() string {
 	return "[:" + negate + a.name + ":]"
 }
 
-func (a asciiCharClassRegexp) Append(classes ...CharClass) CharClass {
-	return charSetRegexp{
-		charClasses: append([]CharClass{a}, classes...),
-		negated:     a.negated,
-	}
-}
-
 func (a asciiCharClassRegexp) Negate() CharClass {
 	a.negated = !a.negated
 	return a
+}
+
+func (a asciiCharClassRegexp) IsNegated() bool {
+	return a.negated
 }
 
 type unicodeCharClassRegexp struct {
@@ -547,14 +627,11 @@ func (u unicodeCharClassRegexp) charSetRegexp() string {
 	return u.Regexp()
 }
 
-func (u unicodeCharClassRegexp) Append(classes ...CharClass) CharClass {
-	return charSetRegexp{
-		charClasses: append([]CharClass{u}, classes...),
-		negated:     u.negated,
-	}
-}
-
 func (u unicodeCharClassRegexp) Negate() CharClass {
 	u.negated = !u.negated
 	return u
+}
+
+func (u unicodeCharClassRegexp) IsNegated() bool {
+	return u.negated
 }

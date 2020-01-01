@@ -23,7 +23,8 @@ import (
 )
 
 func main() {
-    japaneseWord := regen.UnicodeCharClass("Hiragana").Append(
+    japaneseWord := regen.Union(
+        regen.UnicodeCharClass("Hiragana"),
         regen.UnicodeCharClass("Katakana"),
         regen.UnicodeCharClass("Han"),
     ).Repeat().Min(1)
@@ -109,7 +110,8 @@ Note that this *could* be expressed without using `regen.Raw` as follows:
 
 ```go
 re := regexp.MustCompile(regen.Sequence(
-    regen.CharRange('A', 'Z').Append(
+    regen.Union(
+        regen.CharRange('A', 'Z'),
         regen.CharRange('a', 'z'),
         regen.CharRange('0', '9'),
         regen.CharSet('+', '/'),
