@@ -142,7 +142,8 @@ Note that this *could* be expressed without using `regen.Raw` as follows:
 ```go
 re := regexp.MustCompile(regen.Sequence(
     regen.Union(
-        regen.WordCharacter,
+        regen.CharRange('A', 'Z'),
+        regen.CharRange('a', 'z')
         regen.Digit,
         regen.CharSet('+', '/'),
     ).Repeat().Min(1),
