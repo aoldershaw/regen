@@ -89,11 +89,6 @@ func TestRegen(t *testing.T) {
 			expected:    `\pZ`,
 		},
 		{
-			description: "UnicodeCharClass does not wrap a single letter name in brackets",
-			re:          regen.UnicodeCharClass("Z"),
-			expected:    `\pZ`,
-		},
-		{
 			description: "Perl char classes work properly",
 			re:          regen.Whitespace,
 			expected:    `\s`,
