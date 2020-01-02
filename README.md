@@ -40,7 +40,7 @@ func main() {
         ).Optional(),
         regen.LineEnd,
     ).Regexp())
-    // Results in: ^(?P<greeting>[\p{Hiragana}\p{Katakana}\p{Han}]+|w+)(\s+(world|世界))?$
+    // Results in: ^(?P<greeting>[\p{Hiragana}\p{Katakana}\p{Han}]+|\w+)(\s+(world|世界))?$
 
     re.MatchString("こんにちは")   // == true (`greeting` capture group == "こんにちは")
     re.MatchString("hello 世界")  // == true (`greeting` capture group == "hello")
