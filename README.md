@@ -144,7 +144,7 @@ re := regexp.MustCompile(regen.Sequence(
     regen.Union(
         regen.CharRange('A', 'Z'),
         regen.CharRange('a', 'z')
-        regen.Digit,
+        regen.CharRange('0', '9'),
         regen.CharSet('+', '/'),
     ).Repeat().Min(1),
     regen.String("=").Repeat().Max(2),
