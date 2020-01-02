@@ -70,7 +70,7 @@ greeting := regen.String("hello").Group().SetFlags(regen.FlagCaseInsensitive | r
 // Results in: ((?im)hello)
 ```
 
-Or you can unset flags if they were were set in a top-level group:
+Or you can unset flags if they were set in a top-level group:
 
 ```go
 screamHello := regen.String("HELLO").Group().UnsetFlags(regen.CaseInsensitive)
@@ -85,7 +85,7 @@ greeting := regen.Sequence(
 ```
 
 **Note:** not calling `.Group()` on a regular expression does not guarantee that it won't be grouped
-in the resulting regexp. For instance, the result `regen.OneOf` will be grouped. If you need to rely
+in the resulting regexp. For instance, the result `regen.OneOf` is grouped. If you need to rely
 on a particular ordering of capture groups, you should explicitly call `.Group().NoCapture()` on
 sub expressions that should not be captured.
 
