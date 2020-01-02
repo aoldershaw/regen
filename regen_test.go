@@ -3,6 +3,7 @@ package regen_test
 import (
 	"fmt"
 	"github.com/aoldershaw/regen"
+	"regexp"
 	"testing"
 )
 
@@ -265,6 +266,9 @@ func TestRegen(t *testing.T) {
 		actual := tt.re.Regexp()
 		if actual != tt.expected {
 			t.Errorf(`regen test "%s" failed: got "%s", expected "%s"`, tt.description, actual, tt.expected)
+		}
+		if _, err := regexp.Compile(actual); err != nil {
+			t.Errorf(`regen test "%s" failed: "%s" failed to compile: %v`, tt.description, actual, err)
 		}
 	}
 }
