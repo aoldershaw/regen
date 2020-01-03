@@ -314,3 +314,35 @@ func Example() {
 	fmt.Println(re.Regexp())
 	// Output: ^(?P<greeting>[\p{Hiragana}\p{Katakana}\p{Han}]+|\w+)(\s+(world|世界))?$
 }
+
+func Example_email() {
+	tldPart := regen.Union(
+		regen.CharRange('a', 'z'),
+		regen.CharRange('A', 'Z'),
+		regen.CharRange('0', '9'),
+		regen.CharSet('-'),
+	).Repeat().Min(1)
+
+	email := regen.Sequence(
+		regen.LineStart,
+		regen.Union(
+			regen.CharRange('a', 'z'),
+			regen.CharRange('A', 'Z'),
+			regen.CharRange('0', '9'),
+			regen.CharSet(
+				'.', '!', '#', '$', '%', '&', '\'', '*', '+', '/',
+				'=', '?', '^', '_', '`', '{', '|', '}', '~', '-',
+			),
+		).Repeat().Min(1),
+		regen.String("@"),
+		tldPart,
+		regen.Sequence(
+			regen.String("."),
+			tldPart,
+		).Group().NoCapture().Repeat(),
+		regen.LineEnd,
+	)
+
+	fmt.Println(email.Regexp())
+	// Output: ^[a-zA-Z0-9.!#$%&'*+/=?\^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$
+}
